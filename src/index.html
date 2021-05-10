@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Basit Bir Chat APP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-wEmeIV1mKuiNpC+IOBjI7aAzPcEZeedi5yW5f2yOq55WWLwNGmvvx4Um1vskeMj0" crossorigin="anonymous">
+    <style>
+        *{
+            padding:0;
+            margin:0;
+        }
+        body{
+            background-color: #007cec;
+        }
+        .full-size{
+            height: 100vh;
+            width: 100%;
+            padding:0;
+            margin:auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+
+        }
+        .chatBox{
+            width: 600px;
+            box-shadow: 1px 1px 20px 2px #000;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .chatStream{
+            overflow-y: scroll;
+            height: 70vh;
+            display: flex;
+            align-items: flex-end;
+        }
+        #chatMessages{
+            list-style: none;
+            width: 100%;
+        }
+        #chatMessages > li:nth-child(even){
+            background-color: #ccc;
+        }
+        #chatMessages > li{
+            margin-left: -25px;
+        }
+        #userModal{
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #222;
+            z-index: 9999;
+            position: fixed;
+        }
+        #userColor{
+            width: 15px;
+            height: 40px;
+        }
+        /* width */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        /* Track */
+        ::-webkit-scrollbar-track {
+            background: #F1F1F1;
+        }
+
+        /* Handle */
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+
+        /* Handle on hover */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body onload="usernameFunction()">
+    <div id="userModal" style="">
+        <div class="container">
+        <form class="input-group" id="userSaveForm">
+            <input type="text" id="userSaveInput" placeholder="Kullanıcı Adı Giriniz" class="form-control" name="username">
+            <input type="submit"   class="form-control btn btn-success" value="KAYDET">
+        </form>
+        </div>
+    </div>
+    <div class="container full-size">
+        <div class="row chatBox">
+            <div class="col-md-12 chatStream">
+                <ul id="chatMessages">
+
+                </ul>
+            </div>
+            <form id="chatForm" class="chatInput input-group">
+                <input type="color" name="userColor" id="userColor">
+                <input type="text" id="chatInput" class="form-control" name="message"><input type="submit" id="submitButton" class="btn btn-primary" value="GÖNDER">
+            </form>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-p34f1UUtsS3wqzfto5wAAmdvj+osOnFyQFpp4Ua3gs/ZVWx6oOypYoCJhGGScy+8" crossorigin="anonymous"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+        function usernameFunction(){
+            var username = localStorage.getItem('userName');
+            if(username != null){
+                document.getElementById('userModal').style.display = "none";
+            }
+        }
+        var socket = io();
+        var form = document.getElementById('chatForm');
+        var input = document.getElementById('chatInput');
+        var userForm = document.getElementById('userSaveForm');
+        var userInput = document.getElementById('userSaveInput');
+        var chatMessages = document.getElementById('chatMessages');
+        var submitButton = document.getElementById('submitButton');
+        var userColor = document.getElementById('userColor');
+        userForm.addEventListener('submit', (e) =>{
+            e.preventDefault();
+            if(userInput.value){
+                localStorage.setItem('userName', userInput.value);
+                document.getElementById('userModal').style.display = "none";
+            }
+        })
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            let userName = localStorage.getItem('userName');
+            if(input.value){
+                socket.emit('message', {
+                    'username': userName,
+                    'color' : userColor.value,
+                    'message': input.value
+                });
+                chatMessages.innerHTML += "<li><b style='color:"+userColor.value+"'>"+userName+" :</b> "+input.value.replace(/<[^>]*>?/gm, '')+"</li>"
+                input.value = "";
+                submitButton.disabled = "true";
+                setTimeout(function(){
+                    submitButton.removeAttribute('disabled');
+                }, 3000)
+            }
+        })
+        socket.on('userSendMessage', (data) =>{
+            chatMessages.innerHTML += "<li><b style='color:"+data.color+"'>"+data.username+" :</b> "+data.message.replace(/<[^>]*>?/gm, '')+"</li>"
+        });
+    </script>
+</body>
+</html>
